@@ -1,0 +1,82 @@
+<section>
+  <div class="page-title">
+    <div>
+      <h1>🧾 Pemesanan Bahan Ajar</h1>
+      <p>Buat Delivery Order baru dengan nomor otomatis, pilihan paket, validasi input, dan total harga otomatis.</p>
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="card-header">
+      <h2>Form Input Delivery Order</h2>
+      <span class="help">Tekan Enter untuk menyimpan data.</span>
+    </div>
+    <div class="card-body">
+      <form @submit.prevent="submitOrder" @keydown.enter.prevent="submitOrder">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nomor DO</label>
+            <input class="form-control" :value="generatedNoDO" readonly>
+          </div>
+          <div class="form-group">
+            <label>NIM</label>
+            <input class="form-control" v-model.trim="form.nim" placeholder="123456789">
+            <span class="form-error" :class="{show: errors.nim}">{{ errors.nim }}</span>
+          </div>
+          <div class="form-group">
+            <label>Nama</label>
+            <input class="form-control" v-model.trim="form.nama" placeholder="Nama mahasiswa">
+            <span class="form-error" :class="{show: errors.nama}">{{ errors.nama }}</span>
+          </div>
+          <div class="form-group">
+            <label>Ekspedisi</label>
+            <select class="form-control" v-model="form.ekspedisi">
+              <option value="">Pilih ekspedisi</option>
+              <option v-for="ship in pengirimanList" :key="ship.kode" :value="ship.nama">{{ ship.kode }} - {{ ship.nama }}</option>
+            </select>
+            <span class="form-error" :class="{show: errors.ekspedisi}">{{ errors.ekspedisi }}</span>
+          </div>
+          <div class="form-group">
+            <label>Paket Bahan Ajar</label>
+            <select class="form-control" v-model="form.paket">
+              <option value="">Pilih paket</option>
+              <option v-for="paket in paketList" :key="paket.kode" :value="paket.kode">{{ paket.kode }} - {{ paket.nama }}</option>
+            </select>
+            <span class="form-error" :class="{show: errors.paket}">{{ errors.paket }}</span>
+          </div>
+          <div class="form-group">
+            <label>Tanggal Kirim</label>
+            <input class="form-control" type="date" v-model="form.tanggalKirim">
+            <span class="form-error" :class="{show: errors.tanggalKirim}">{{ errors.tanggalKirim }}</span>
+          </div>
+          <div class="form-group">
+            <label>Total Harga</label>
+            <input class="form-control" :value="form.total | rupiah" readonly>
+          </div>
+          <div class="form-group">
+            <label>Status Awal</label>
+            <select class="form-control" v-model="form.status">
+              <option v-for="step in statusSteps" :key="step" :value="step">{{ step }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="package-detail" v-if="selectedPaket">
+          <strong>{{ selectedPaket.kode }} - {{ selectedPaket.nama }}</strong>
+          <p class="help">Total paket: {{ selectedPaket.harga | rupiah }}. Tanggal tampil: {{ form.tanggalKirim | tanggalId }}.</p>
+          <ul>
+            <li v-for="kode in selectedPaket.isi" :key="kode">
+              <span class="code">{{ kode }}</span> - {{ courseName(kode) }}
+            </li>
+          </ul>
+        </div>
+        <div class="panel-note" v-else style="margin-top:12px;">Pilih paket untuk melihat detail isi bahan ajar.</div>
+
+        <div class="actions" style="margin-top:16px;">
+          <button class="btn btn-accent" type="submit">💾 Simpan Delivery Order</button>
+          <button class="btn btn-outline" type="button" @click="resetForm">Reset</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</section>
