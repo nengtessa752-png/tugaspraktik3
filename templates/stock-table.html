@@ -1,0 +1,190 @@
+<section>
+  <div class="page-title">
+    <div>
+      <h1>📦 Stok Bahan Ajar</h1>
+      <p>Kelola stok bahan ajar UT, pantau safety stock, dan lakukan reorder lebih cepat.</p>
+    </div>
+    <button class="btn btn-accent" type="button" @click="toggleForm">
+      {{ formVisible ? '✕ Tutup Form' : '➕ Tambah Bahan Ajar' }}
+    </button>
+  </div>
+
+  <section class="stats-grid">
+    <div class="stat-card"><div class="stat-icon" style="background:#dbeafe;">📚</div><div><div class="stat-value">{{ stagedItems.length }}</div><div class="stat-label">Jumlah Item</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#dcfce7;">✅</div><div><div class="stat-value">{{ stockStats.aman }}</div><div class="stat-label">Stok Aman</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#fef3c7;">⚠️</div><div><div class="stat-value">{{ stockStats.menipis }}</div><div class="stat-label">Stok Menipis</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#fee2e2;">⛔</div><div><div class="stat-value">{{ stockStats.kosong }}</div><div class="stat-label">Stok Kosong</div></div></div>
+  </section>
+
+  <section class="card" v-show="formVisible">
+    <div class="card-header"><h2>{{ editIndex === null ? 'Tambah Data Bahan Ajar' : 'Edit Data Bahan Ajar' }}</h2></div>
+    <div class="card-body">
+      <form @submit.prevent="submitForm" @keydown.enter.prevent="submitForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Kode Mata Kuliah</label>
+            <input class="form-control" v-model.trim="form.kode" placeholder="EKMA4116">
+            <span class="form-error" :class="{show: errors.kode}">{{ errors.kode }}</span>
+          </div>
+          <div class="form-group">
+            <label>Nama Mata Kuliah</label>
+            <input class="form-control" v-model.trim="form.judul" placeholder="Pengantar Manajemen">
+            <span class="form-error" :class="{show: errors.judul}">{{ errors.judul }}</span>
+          </div>
+          <div class="form-group">
+            <label>Kategori</label>
+            <select class="form-control" v-model="form.kategori">
+              <option value="">Pilih kategori</option>
+              <option v-for="kategori in kategoriList" :key="kategori" :value="kategori">{{ kategori }}</option>
+            </select>
+            <span class="form-error" :class="{show: errors.kategori}">{{ errors.kategori }}</span>
+          </div>
+          <div class="form-group">
+            <label>UT-Daerah</label>
+            <select class="form-control" v-model="form.upbjj">
+              <option value="">Pilih UT-Daerah</option>
+              <option v-for="area in upbjjList" :key="area" :value="area">{{ area }}</option>
+            </select>
+            <span class="form-error" :class="{show: errors.upbjj}">{{ errors.upbjj }}</span>
+          </div>
+          <div class="form-group">
+            <label>Lokasi Rak</label>
+            <input class="form-control" v-model.trim="form.lokasiRak" placeholder="R1-A3">
+            <span class="form-error" :class="{show: errors.lokasiRak}">{{ errors.lokasiRak }}</span>
+          </div>
+          <div class="form-group">
+            <label>Harga</label>
+            <input class="form-control" type="number" min="0" v-model.number="form.harga" placeholder="65000">
+            <span class="form-error" :class="{show: errors.harga}">{{ errors.harga }}</span>
+          </div>
+          <div class="form-group">
+            <label>Jumlah Stok</label>
+            <input class="form-control" type="number" min="0" v-model.number="form.qty" placeholder="28">
+            <span class="form-error" :class="{show: errors.qty}">{{ errors.qty }}</span>
+          </div>
+          <div class="form-group">
+            <label>Safety Stock</label>
+            <input class="form-control" type="number" min="0" v-model.number="form.safety" placeholder="20">
+            <span class="form-error" :class="{show: errors.safety}">{{ errors.safety }}</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>Catatan HTML</label>
+          <textarea class="form-control" v-model.trim="form.catatanHTML" placeholder="Contoh: <em>Edisi 2024</em>"></textarea>
+        </div>
+        <div class="actions" style="margin-top:16px;">
+          <button class="btn" type="submit">💾 Simpan</button>
+          <button class="btn btn-outline" type="button" @click="resetForm">Reset</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Filter dan Sort Data Stok</h2></div>
+    <div class="card-body">
+      <div class="filter-row">
+        <div class="form-group">
+          <label>Cari</label>
+          <input class="form-control" v-model.trim="filters.search" placeholder="Cari kode, judul, rak...">
+        </div>
+        <div class="form-group">
+          <label>UT-Daerah</label>
+          <select class="form-control" v-model="filters.upbjj">
+            <option value="">Semua</option>
+            <option v-for="area in upbjjList" :key="area" :value="area">{{ area }}</option>
+          </select>
+        </div>
+        <div class="form-group" v-if="filters.upbjj">
+          <label>Kategori Mata Kuliah</label>
+          <select class="form-control" v-model="filters.kategori">
+            <option value="">Semua</option>
+            <option v-for="kategori in dependentKategori" :key="kategori" :value="kategori">{{ kategori }}</option>
+          </select>
+        </div>
+        <div class="form-group" v-else>
+          <label>Kategori</label>
+          <select class="form-control" disabled>
+            <option>Pilih UT-Daerah dahulu</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Reorder</label>
+          <select class="form-control" v-model="filters.alertOnly">
+            <option :value="false">Semua Stok</option>
+            <option :value="true">Menipis/Kosong</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Urutkan</label>
+          <select class="form-control" v-model="filters.sortBy">
+            <option value="judul">Judul</option>
+            <option value="qty">Stock</option>
+            <option value="harga">Harga</option>
+          </select>
+        </div>
+        <button class="btn btn-outline" type="button" @click="resetFilters">Reset</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2>Daftar Stok</h2>
+      <span class="help">Menampilkan {{ filteredItems.length }} dari {{ stagedItems.length }} data</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Kode/Nama Mata Kuliah</th>
+            <th>Kategori</th>
+            <th>UT-Daerah</th>
+            <th>Lokasi Rak</th>
+            <th>Harga</th>
+            <th>Stok</th>
+            <th>Safety</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="filteredItems.length === 0">
+            <td colspan="10"><div class="empty"><div class="big">📭</div><p>Data stok tidak ditemukan.</p></div></td>
+          </tr>
+          <tr v-for="(item, index) in filteredItems" :key="item.kode">
+            <td>{{ index + 1 }}</td>
+            <td><span class="code" v-text="item.kode"></span><br><strong>{{ item.judul }}</strong></td>
+            <td>{{ item.kategori }}</td>
+            <td>{{ item.upbjj }}</td>
+            <td>{{ item.lokasiRak }}</td>
+            <td>{{ item.harga | rupiah }}</td>
+            <td><strong>{{ item.qty | buah }}</strong></td>
+            <td>{{ item.safety | buah }}</td>
+            <td>
+              <div class="tooltip-wrap" @mouseenter="hoveredCode = item.kode" @mouseleave="hoveredCode = ''">
+                <status-badge :qty="item.qty" :safety="item.safety"></status-badge>
+                <div class="tooltip-box" v-if="hoveredCode === item.kode" v-html="item.catatanHTML || 'Tidak ada catatan.'"></div>
+              </div>
+            </td>
+            <td>
+              <div class="actions">
+                <button class="btn btn-sm" type="button" @click="editItem(item.kode)">Edit</button>
+                <button class="btn btn-sm btn-danger" type="button" @click="askDelete(item.kode)">Delete</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <app-modal
+    :show="modal.show"
+    title="Konfirmasi Penghapusan"
+    :message="modal.message"
+    @confirm="deleteItem"
+    @cancel="modal.show = false">
+  </app-modal>
+</section>

@@ -1,0 +1,106 @@
+<section>
+  <div class="page-title">
+    <div>
+      <h1>🚚 Tracking Delivery Order</h1>
+      <p>Cari DO berdasarkan nomor Delivery Order atau NIM, lalu tambah progress perjalanan pengiriman.</p>
+    </div>
+  </div>
+
+  <section class="stats-grid">
+    <div class="stat-card"><div class="stat-icon" style="background:#dbeafe;">📋</div><div><div class="stat-value">{{ trackingData.length }}</div><div class="stat-label">Total DO</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#fef3c7;">🔄</div><div><div class="stat-value">{{ stats.proses }}</div><div class="stat-label">Dalam Proses</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#dcfce7;">✅</div><div><div class="stat-value">{{ stats.terkirim }}</div><div class="stat-label">Terkirim</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#ede9fe;">👤</div><div><div class="stat-value">{{ stats.nim }}</div><div class="stat-label">NIM Unik</div></div></div>
+  </section>
+
+  <section class="tracking-grid">
+    <div class="card">
+      <div class="card-header"><h2>Cari Nomor DO atau NIM</h2></div>
+      <div class="card-body">
+        <div class="filter-row tracking-search">
+          <input class="form-control" v-model.trim="search" @keyup.enter="submitSearch" @keyup.esc="clearSearch" placeholder="Contoh: DO2025-001 atau 123456789">
+          <button class="btn" type="button" @click="submitSearch">Cari</button>
+          <button class="btn btn-outline" type="button" @click="clearSearch">Reset</button>
+        </div>
+        <p class="help" style="margin-top:10px;">Enter untuk mencari. Esc untuk membersihkan pencarian.</p>
+        <div class="do-list">
+          <div v-if="displayList.length === 0" class="empty"><p>Data DO tidak ditemukan.</p></div>
+          <div v-for="item in displayList" :key="item.noDO" class="do-item" :class="{active: selectedNoDO === item.noDO}" @click="selectDO(item.noDO)">
+            <strong class="code">{{ item.noDO }}</strong>
+            <div>{{ item.nama }} <span class="help">({{ item.nim }})</span></div>
+            <div class="do-meta">
+              <span>{{ item.ekspedisi }}</span>
+              <span class="badge" :class="statusBadgeClass(item.status)">{{ item.status }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Detail Tracking</h2></div>
+      <div class="card-body">
+        <div class="empty" v-if="!selectedItem"><div class="big">🔍</div><p>Pilih salah satu DO untuk melihat detail tracking.</p></div>
+        <div v-else>
+          <div class="result-head">
+            <small>{{ selectedItem.noDO }}</small>
+            <h2>{{ selectedItem.nama }}</h2>
+            <span class="badge" :class="statusBadgeClass(selectedItem.status)">{{ selectedItem.status }}</span>
+            <div class="meta-grid">
+              <div class="meta-box"><span>NIM</span><strong>{{ selectedItem.nim }}</strong></div>
+              <div class="meta-box"><span>Tanggal Kirim</span><strong>{{ selectedItem.tanggalKirim | tanggalId }}</strong></div>
+              <div class="meta-box"><span>Paket</span><strong>{{ selectedItem.paket }}</strong></div>
+              <div class="meta-box"><span>Total</span><strong>{{ selectedItem.total | rupiah }}</strong></div>
+            </div>
+          </div>
+
+          <div class="card" style="box-shadow:none; margin-bottom:16px;">
+            <div class="card-header"><h3>Progress Pengiriman</h3></div>
+            <div class="card-body">
+              <div class="steps">
+                <template v-for="(step, index) in statusSteps">
+                  <div class="step" :class="stepClass(index)" :key="step">
+                    <div class="step-circle">{{ index < currentStepIndex ? '✓' : index + 1 }}</div>
+                    <small>{{ step }}</small>
+                  </div>
+                  <div class="connector" :class="{done: index < currentStepIndex}" v-if="index < statusSteps.length - 1" :key="step + '-line'"></div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="box-shadow:none; margin-bottom:16px;">
+            <div class="card-header"><h3>Tambah Status Progress</h3></div>
+            <div class="card-body">
+              <div class="filter-row" style="grid-template-columns:1fr 2fr auto;">
+                <div class="form-group">
+                  <label>Status Baru</label>
+                  <select class="form-control" v-model="progress.status">
+                    <option v-for="step in statusSteps" :key="step" :value="step">{{ step }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Keterangan</label>
+                  <input class="form-control" v-model.trim="progress.keterangan" @keyup.enter="addProgress" placeholder="Contoh: Paket tiba di gudang tujuan">
+                </div>
+                <button class="btn" type="button" @click="addProgress">Update</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="box-shadow:none; margin-bottom:0;">
+            <div class="card-header"><h3>Riwayat Perjalanan</h3></div>
+            <div class="card-body">
+              <div class="timeline">
+                <div class="timeline-row" v-for="(row, index) in reversedTimeline" :key="index">
+                  <div><div class="dot"></div></div>
+                  <div><div class="time">{{ row.waktu | datetimeId }}</div><div>{{ row.keterangan }}</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
